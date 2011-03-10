@@ -4,8 +4,8 @@
 #include "colosseum.h"
 #include "colosseumCtrl.h"
 #include "colosseumPropPage.h"
-#include "IFCEngineInteract.h"
 #include <assert.h>
+#include <fstream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -21,6 +21,9 @@ extern float	* g_pVertices;
 
 D3DXVECTOR3		g_vecOrigin;
 
+///The temporary file name that is going to be filled with ifc objects
+///Change the file here if you want
+const std::string g_tempFileName = "C:\\temp.ifc";
 IMPLEMENT_DYNCREATE(CColosseumCtrl, COleControl)
 
 
@@ -39,7 +42,7 @@ END_MESSAGE_MAP()
 // Dispatch map
 
 BEGIN_DISPATCH_MAP(CColosseumCtrl, COleControl)
-	DISP_FUNCTION_ID(CColosseumCtrl, "AboutBox", DISPID_ABOUTBOX, AboutBox, VT_EMPTY, VTS_NONE)
+	
 END_DISPATCH_MAP()
 
 
@@ -131,17 +134,22 @@ CColosseumCtrl::CColosseumCtrl() : m_width(0), m_height(0), m_server(""), MULTIP
 	InitializeIIDs(&IID_Dcolosseum, &IID_DcolosseumEvents);
 	// TODO: Initialize your control's instance data here.
 	
+	g_pVertices = NULL;
+	g_pIndices = NULL;
+	g_pVerticesDeviceBuffer = NULL;
+
+
 	m_pD3D = NULL;
 	m_pd3dDevice = NULL;
 	m_pVB = NULL;
 	m_initialized = false;
 	m_engineInteract = new CIFCEngineInteract();
 	m_camera = new CCamera(D3DXVECTOR3(0,0,-2.5f));
+	m_tempFile.open("C:\\temp.ifc");
+	CObjectTransferer::getSingleton().setIFCEngine(m_engineInteract);
+	
 	/* Reset D3DPRESENT_PARAMETERS structure */
 	memset( &m_d3dpp, 0, sizeof(m_d3dpp) );
-	
-
-
 }
 
 
@@ -157,6 +165,7 @@ void CColosseumCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 	 * A for left strafing
 	 * D for right straging
 	 */
+	CObjectTransfererThread *t = NULL;
 	switch( nChar ) {
 			case 0x57: //W KEY
 				
@@ -166,9 +175,18 @@ void CColosseumCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 					render();
 				}
 				break;
+			case 0x58:
+				//CObjectTransferer::getSingleton().transferObject(IFC_WINDOW, m_fileNumber, m_tempFile);
+				t = new CObjectTransfererThread(this->m_tempFile, m_objectVector, m_fileNumber);
+				t->CreateThread();
+				if(m_initialized) {
+					render();
+				}
+				break;
 			case 0x53: // S KEY
 				/* Inverse the direction by multiplying with -1*/
 				m_camera->moveForward(-1.0f * MULTIPLY_RATIO);
+				
 				if  (m_initialized) {
 					render();
 				}
@@ -201,20 +219,29 @@ void CColosseumCtrl::OnShowWindow(BOOL bShow, UINT nStatus)
 	 * in because we are going to use to initialize the DirectX device module and initialize the device buffer .
 	 * Lastly we render the changes.
 	 */
-	if ( 0 == m_engineInteract->retrieveObjectGroups((m_server.GetBuffer(0))))
+	/** Trying the web service */
+	
+	//CObjectTransferer::getSingleton().transferObject(IFC_WINDOW, m_fileNumber, f);
+	//CObjectTransferer::getSingleton().transferObject(IFC_DOOR, m_fileNumber, f);
+	//CObjectTransferer::getSingleton().transferObject(IFC_WALLSTANDARDCASE, m_fileNumber, f);
+	
+	if ( 0 == m_engineInteract->retrieveObjectGroups("C:\\temp1.ifc"))//(m_server.GetBuffer(0))))
 		m_engineInteract->enrichObjectGroups();
 	else	
 		ASSERT(1==0);
+	
+	CObjectTransferer::getSingleton().setCtrl(this);
 	
 	CRect rc;
 	GetWindowRect(&rc);
 	m_width = rc.Width();
 	m_height = rc.Height();
-
+	
 	m_hwndRenderWindow = this->m_hWnd;
 	initializeDevice();
 	initializeDeviceBuffer();
-	
+	m_objectVector.push_back(IFC_WINDOW);
+	m_objectVector.push_back(IFC_DOOR);
 	if(m_initialized)
 			render();		
 }
@@ -254,7 +281,7 @@ LRESULT CColosseumCtrl::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 	 /* I left the WindowProc method so that leave the window rendering while 
 	  * there are no messages to handle.
 	  * I left some message handling to determine the coordinates of the previous frame 
-	  * so that it is dealt with in the OnMouseMove method
+	  * so that it is dealed with in the OnMouseMove method
 	  */
 	
 	switch (message)
@@ -287,8 +314,44 @@ LRESULT CColosseumCtrl::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 CColosseumCtrl::~CColosseumCtrl()
 {
 	// TODO: Cleanup your control's instance data here.
-	delete m_engineInteract;
-	delete m_camera;
+	m_tempFile.close();
+	if( m_engineInteract ) {
+		delete m_engineInteract;
+		m_engineInteract = NULL;
+	}
+	if( m_camera ) {
+		delete m_camera;
+		m_camera = NULL;
+	}
+
+	if( m_pVB != NULL ) {
+			if( FAILED( m_pVB->Release() ) ) {
+				g_directXStatus = -1;
+				ASSERT(1==0);
+				return;
+			}
+		}
+
+		if( m_pd3dDevice != NULL ) {
+			if( FAILED( m_pd3dDevice->Release() ) ) {
+				g_directXStatus = -1;
+				ASSERT(1==0);
+				return;
+			}
+		}
+
+		if( m_pD3D != NULL ) {
+			if( FAILED( m_pD3D->Release() ) ) {
+				g_directXStatus = -1;
+				ASSERT(1==0);
+				return;
+			}
+		}
+		//_CrtDumpMemoryLeaks();
+
+		
+		//_CrtDumpMemoryLeaks();
+
 }
 
 
@@ -300,7 +363,7 @@ void CColosseumCtrl::OnDraw(
 {
 	if (!pdc)
 		return;
-	// TODO: Replace the following code with your own drawing code.
+	
 }
 
 
@@ -313,7 +376,9 @@ void CColosseumCtrl::DoPropExchange(CPropExchange* pPX)
 	// TODO: Call PX_ functions for each persistent custom property.
 	
 	
-	PX_String(pPX, _T("server"), m_server, _T(""));
+	PX_String(pPX, _T("Server"), m_server, _T("http://localhost:2222/Service1.svc"));
+	PX_Long(pPX, _T("File"), m_fileNumber);
+	
 	
 }
 
@@ -342,16 +407,6 @@ void CColosseumCtrl::OnResetState()
 	COleControl::OnResetState();  // Resets defaults found in DoPropExchange
 	
 	// TODO: Reset any other control state here.
-}
-
-
-
-// CColosseumCtrl::AboutBox - Display an "About" box to the user
-
-void CColosseumCtrl::AboutBox()
-{
-	CDialog dlgAbout(IDD_ABOUTBOX_COLOSSEUM);
-	dlgAbout.DoModal();
 }
 
 
@@ -460,7 +515,9 @@ void	CColosseumCtrl::initializeDeviceBuffer()
 			}
 
 			int i = 0;
+			int z;
 			while  (i < g_noIndices) {
+				z = g_pIndices[i];
 				ASSERT(g_pIndices[i] < g_noVertices);
 				memcpy(&(((CUSTOMVERTEX *) g_pVerticesDeviceBuffer)[i]), &(((CUSTOMVERTEX *) g_pVertices)[g_pIndices[i]]), sizeof(CUSTOMVERTEX));
 
@@ -473,6 +530,31 @@ void	CColosseumCtrl::initializeDeviceBuffer()
 			}
 		}
 	}
+}
+
+void CColosseumCtrl::releaseVertexBuffer()
+{
+	if(m_pVB) {
+		m_pVB->Release();
+		m_pVB = NULL;
+	}
+	if( g_pVertices ) {
+		free(g_pVertices);
+		g_pVertices = NULL;
+		g_noVertices = 0;
+	}
+
+	if( g_pIndices ) {
+		free(g_pIndices);
+		g_pIndices = NULL;
+		g_noIndices = 0;
+	}
+
+	/*if( g_pVerticesDeviceBuffer ) {
+		free(g_pVerticesDeviceBuffer);
+		g_pVerticesDeviceBuffer = NULL;
+	}*/
+
 }
 
 void	CColosseumCtrl::render()
@@ -522,14 +604,16 @@ void	CColosseumCtrl::render()
 
 			m_pd3dDevice->SetMaterial(&mtrl);
 			
-			STRUCT_INSTANCES	* instance = m_engineInteract->getFirstInstance();
-			while  (instance) {
-				if	( (instance->parent)  &&
-					  (instance->select == ITEM_CHECKED) ){
-					m_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLELIST, instance->startIndex, instance->primitiveCount);  
-				}
+			if(!m_engineInteract->getLock()) {
+				STRUCT_INSTANCES	* instance = m_engineInteract->getFirstInstance();
+				while  (instance) {
+					if	( (instance->parent)  &&
+						  (instance->select == ITEM_CHECKED) ){
+						m_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLELIST, instance->startIndex, instance->primitiveCount);  
+					}
 
-				instance = instance->next;
+					instance = instance->next;
+				}
 			}
 
 			// End the scene

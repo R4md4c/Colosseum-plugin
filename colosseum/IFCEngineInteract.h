@@ -29,16 +29,26 @@ class CIFCEngineInteract
 protected:
 	STRUCT_INSTANCES	*m_firstInstance;
 	STRUCT_INSTANCES	*m_lastInstance;
-
+	///A flag indicates that the tree that contains the buffer is locked
+	bool				 m_isLock;
 public:
 	CIFCEngineInteract();
-	//TODO: Leave it or take it out?
-	void initIFCEngineInteract();
+
+	inline bool getLock() {
+		return m_isLock;
+	}
+
+	inline void setLock(bool enabled = true) {
+		m_isLock = enabled;
+	}
+
 	STRUCT_INSTANCES	* addObject(STRUCT_INSTANCES * parent, int id, char * name);
 	void	retrieveObjects(char * ObjectSPFFName, char * ObjectGroupName);
 	int		retrieveObjectGroups(char * fileName);
 	void	enrichObjectGroups();
 	STRUCT_INSTANCES  *getFirstInstance() const;	
+	///Destroy the current object manually 
+	void destroyManually();
 	~CIFCEngineInteract();
 };
 #endif

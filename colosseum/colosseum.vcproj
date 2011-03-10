@@ -47,12 +47,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;E:\Dev\Microsoft DirectX SDK (August 2009)\Include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (August 2009)\Include&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
-				UsePrecompiledHeader="2"
+				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -74,7 +74,7 @@
 				AdditionalDependencies="IFCEngine.lib d3dx9.lib d3d9.lib"
 				OutputFile="$(OutDir)\$(ProjectName).ocx"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;E:\Dev\Microsoft DirectX SDK (August 2009)\Lib\x86&quot;"
+				AdditionalLibraryDirectories="&quot;E:\Graduation Project\IFCEngineDLLv1.03\IFCEngineDLLv1.03 (build 3365)\32bit&quot;;&quot;C:\Program Files\Microsoft DirectX SDK (August 2009)\Lib\x86&quot;"
 				ModuleDefinitionFile=".\colosseum.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -227,6 +227,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ObjectTransferer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -277,6 +281,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ObjectTransferer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Resource.h"
 				>
 			</File>
@@ -306,6 +314,58 @@
 				RelativePath=".\colosseumCtrl.bmp"
 				>
 			</File>
+		</Filter>
+		<Filter
+			Name="ServiceConsumer"
+			>
+			<Filter
+				Name="Header Files"
+				>
+				<File
+					RelativePath=".\CustomBinding_USCOREIService1.nsmap"
+					>
+				</File>
+				<File
+					RelativePath=".\ServiceConsumer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\soapCustomBinding_USCOREIService1Proxy.h"
+					>
+				</File>
+				<File
+					RelativePath=".\soapH.h"
+					>
+				</File>
+				<File
+					RelativePath=".\soapStub.h"
+					>
+				</File>
+				<File
+					RelativePath=".\stdsoap2.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Source Files"
+				>
+				<File
+					RelativePath=".\ServiceConsumer.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\soapC.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\soapCustomBinding_USCOREIService1Proxy.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\stdsoap2.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

@@ -1,13 +1,21 @@
+#ifndef COLOSSEUM_CTRL_H
+#define COLOSSEUM_CTRL_H
+
 #pragma once
 
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 
 
 // colosseumCtrl.h : Declaration of the CColosseumCtrl ActiveX Control class.
 /* DirectX 9 header files */
+
 #include <d3d9.h>
 #include <d3dx9.h>
 #include "Camera.h"
-#include "IFCEngineInteract.h"
+#include "ServiceConsumer.h"
+#include "ObjectTransferer.h"
 
 /* The format of each vertex */
 
@@ -67,19 +75,24 @@ protected:
 // Dispatch maps
 	DECLARE_DISPATCH_MAP()
 
-	afx_msg void AboutBox();
+	
 
 // Event maps
 	DECLARE_EVENT_MAP()
 
 //Attributes and Properties
+
 	LONG m_width;
 	LONG m_height;
 	CString m_server;
+	LONG m_fileNumber;
+	///The file that will the data be output to
+	std::ofstream m_tempFile;
 	HWND m_hwndRenderWindow;
 	bool m_initialized;
 	CIFCEngineInteract *m_engineInteract;
-
+	//For testing
+	std::vector<IFCObject> m_objectVector;
 	LPDIRECT3D9            m_pD3D;			// Used to create the D3DDevice
 	LPDIRECT3DDEVICE9       m_pd3dDevice;	// Our rendering device
 	LPDIRECT3DVERTEXBUFFER9 m_pVB;			// Buffer to hold vertices
@@ -89,9 +102,12 @@ protected:
 	/* camera object */
 	CCamera *m_camera;
 
+public:
 /* DirectX related functions */
 	void	initializeDevice();
 	void	initializeDeviceBuffer();
+	/*	Release vertex and index buffers */
+	void	releaseVertexBuffer();
 	void	render();
 	int		setupLights();
 	int		setupMatrices();
@@ -104,9 +120,11 @@ private:
 protected:
 	
 	LONG GetWidth(void) const ; 
-	//void SetWidth(LONG newVal);
+	
 	LONG GetHeight(void) const ;
-	//void SetHeight(LONG newVal);
+	
 	BSTR GetServer(void) const;
-	//void Setserver(LPCTSTR newVal);
+	
 };
+
+#endif

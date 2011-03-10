@@ -47,7 +47,7 @@ BOOL CColosseumApp::InitInstance()
 int CColosseumApp::ExitInstance()
 {
 	// TODO: Add your own module termination code here.
-	delete g_ifcSchemaName;
+	delete [] g_ifcSchemaName;
 	g_ifcSchemaName = NULL;
 	return COleControlModule::ExitInstance();
 }

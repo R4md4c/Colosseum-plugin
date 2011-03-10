@@ -9,6 +9,7 @@
 #include "resource.h"       // main symbols
 
 
+
 // CColosseumApp : See colosseum.cpp for implementation.
 
 class CColosseumApp : public COleControlModule

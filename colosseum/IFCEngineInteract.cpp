@@ -11,14 +11,9 @@ CIFCEngineInteract::CIFCEngineInteract()
 {
 	m_firstInstance = NULL;
 	m_lastInstance = NULL;
+	m_isLock = false;
 }
 
-void CIFCEngineInteract::initIFCEngineInteract()
-{
-
-	m_firstInstance = NULL;
-	m_lastInstance = NULL;
-}
 
 STRUCT_INSTANCES * CIFCEngineInteract::addObject(STRUCT_INSTANCES * parent, int id, char * name)
 {
@@ -187,8 +182,44 @@ STRUCT_INSTANCES  *CIFCEngineInteract::getFirstInstance() const
 	return m_firstInstance;
 }
 
+void CIFCEngineInteract::destroyManually()
+{
+	//Delete the linked list
+	if(getFirstInstance() != NULL) {
+		STRUCT_INSTANCES	* instance = getFirstInstance();
+		STRUCT_INSTANCES	* temp = NULL;
+		//Used to delete the parent
+		STRUCT_INSTANCES	*parentTemp = NULL;
+		while( instance ) {
+			temp = instance;
+			if(instance->parent)
+				instance->parent = NULL;
+			instance = instance->next;
+			delete temp;
+		}
+		///I nullified the last instance because when i use this method the m_lastInstance
+		///will contain a value which will make the addObject method to give a memory which the program 
+		///doesn't own
+		m_lastInstance = NULL;
+	}
+	
+}
+
 CIFCEngineInteract::~CIFCEngineInteract()
 {
-	//TODO: Delete the linked list
-	TRACE("Delete CIFCEngineInteract");
+	//Delete the linked list
+	if( getFirstInstance() != NULL) {
+		STRUCT_INSTANCES	* instance = getFirstInstance();
+		STRUCT_INSTANCES	* temp = NULL;
+		while( instance ) {
+			temp = instance;
+			instance = instance->next;
+			delete temp;
+		}
+		this->m_firstInstance = NULL;
+		this->m_lastInstance = NULL;
+		temp = NULL;
+	}
+	free(g_pIndices);
+	free(g_pVertices);
 }
