@@ -6,10 +6,17 @@
 #include "colosseumPropPage.h"
 #include <assert.h>
 #include <fstream>
+#include <intrin.h>
+
+#pragma intrinsic(__rdtsc)
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+//TODO: find a way to make it dynamic
+//Maximum Number of vertices
+#define MAX_VERTICES_SIZE 100000
 
 /* An error indication value non-zero if error exists */
 int		g_directXStatus = 0;
@@ -18,6 +25,8 @@ float	* g_pVerticesDeviceBuffer;
 
 extern int		g_noVertices, g_noIndices, * g_pIndices;
 extern float	* g_pVertices;
+//Temp file name
+std::string g_tempFile;
 
 D3DXVECTOR3		g_vecOrigin;
 
@@ -145,7 +154,21 @@ CColosseumCtrl::CColosseumCtrl() : m_width(0), m_height(0), m_server(""), MULTIP
 	m_initialized = false;
 	m_engineInteract = new CIFCEngineInteract();
 	m_camera = new CCamera(D3DXVECTOR3(0,0,-2.5f));
-	m_tempFile.open("C:\\temp.ifc");
+
+	///Create a temporary file using a unique timestamp
+	TCHAR temp_path[MAX_PATH];
+	///Get the temp path
+	DWORD retValue = GetTempPath(MAX_PATH, temp_path);
+	//If the returned number is greater than the number of MAX_PATH then stop execution
+	if(retValue > MAX_PATH)
+		ASSERT(1==0);
+	std::stringstream ss;
+	unsigned __int64 time_stamp = __rdtsc();
+	ss << temp_path << "temp" << time_stamp << ".ifc";
+	g_tempFile = ss.str();
+	m_tempFile.open(g_tempFile.c_str());
+
+
 	CObjectTransferer::getSingleton().setIFCEngine(m_engineInteract);
 	
 	/* Reset D3DPRESENT_PARAMETERS structure */
@@ -219,24 +242,20 @@ void CColosseumCtrl::OnShowWindow(BOOL bShow, UINT nStatus)
 	 * in because we are going to use to initialize the DirectX device module and initialize the device buffer .
 	 * Lastly we render the changes.
 	 */
-	/** Trying the web service */
 	
-	//CObjectTransferer::getSingleton().transferObject(IFC_WINDOW, m_fileNumber, f);
-	//CObjectTransferer::getSingleton().transferObject(IFC_DOOR, m_fileNumber, f);
-	//CObjectTransferer::getSingleton().transferObject(IFC_WALLSTANDARDCASE, m_fileNumber, f);
-	
-	if ( 0 == m_engineInteract->retrieveObjectGroups("C:\\temp1.ifc"))//(m_server.GetBuffer(0))))
+	/*if ( 0 == m_engineInteract->retrieveObjectGroups("C:\\temp1.ifc"))//(m_server.GetBuffer(0))))
 		m_engineInteract->enrichObjectGroups();
 	else	
-		ASSERT(1==0);
+		ASSERT(1==0);*/
 	
 	CObjectTransferer::getSingleton().setCtrl(this);
+	CObjectTransferer::getSingleton().setEndpoint(m_server.GetBuffer(0));
 	
+
 	CRect rc;
 	GetWindowRect(&rc);
 	m_width = rc.Width();
 	m_height = rc.Height();
-	
 	m_hwndRenderWindow = this->m_hWnd;
 	initializeDevice();
 	initializeDeviceBuffer();
@@ -244,6 +263,9 @@ void CColosseumCtrl::OnShowWindow(BOOL bShow, UINT nStatus)
 	m_objectVector.push_back(IFC_DOOR);
 	if(m_initialized)
 			render();		
+	CObjectTransfererThread *t = new CObjectTransfererThread(this->m_tempFile, m_objectVector, m_fileNumber);
+	t->CreateThread();
+				
 }
 
 int		iZoomMouseX, iZoomMouseY;
@@ -499,45 +521,45 @@ void	CColosseumCtrl::initializeDevice()
 
 void	CColosseumCtrl::initializeDeviceBuffer()
 {
-	if	(g_noVertices) {
+	//if	(g_noVertices) {
 		if	(!g_directXStatus) {
-			if( FAILED( m_pd3dDevice->CreateVertexBuffer( g_noIndices * sizeof(CUSTOMVERTEX),
-														  0, D3DFVF_CUSTOMVERTEX,
+			if( FAILED( m_pd3dDevice->CreateVertexBuffer( MAX_VERTICES_SIZE  * sizeof(CUSTOMVERTEX),
+														  D3DUSAGE_DYNAMIC, D3DFVF_CUSTOMVERTEX,
 														  D3DPOOL_DEFAULT, &m_pVB, NULL ) ) )
 			{
 				ASSERT(1==0);
 				return;
 			}
+		}
+	//}
+}
 
-			if( FAILED( m_pVB->Lock( 0, 0, (void **)&g_pVerticesDeviceBuffer, 0 ) ) ) {
+void CColosseumCtrl::fillVertexBuffer()
+{
+	if(g_noVertices) {
+		if( FAILED( m_pVB->Lock( 0, 0, (void **)&g_pVerticesDeviceBuffer, D3DLOCK_DISCARD ) ) ) {
 				ASSERT(1==0);
 				return;
 			}
 
-			int i = 0;
-			int z;
-			while  (i < g_noIndices) {
-				z = g_pIndices[i];
-				ASSERT(g_pIndices[i] < g_noVertices);
-				memcpy(&(((CUSTOMVERTEX *) g_pVerticesDeviceBuffer)[i]), &(((CUSTOMVERTEX *) g_pVertices)[g_pIndices[i]]), sizeof(CUSTOMVERTEX));
+		int i = 0;
+		int z;
+		while  (i < g_noIndices) {
+			z = g_pIndices[i];
+			ASSERT(g_pIndices[i] < g_noVertices);
+			memcpy(&(((CUSTOMVERTEX *) g_pVerticesDeviceBuffer)[i]), &(((CUSTOMVERTEX *) g_pVertices)[g_pIndices[i]]), sizeof(CUSTOMVERTEX));
+			i++;
+		}
 
-				i++;
-			}
-
-			if	(FAILED( m_pVB->Unlock())) {
-				ASSERT(1==0);
-				return;
-			}
+		if	(FAILED( m_pVB->Unlock())) {
+			ASSERT(1==0);
+			return;
 		}
 	}
 }
 
-void CColosseumCtrl::releaseVertexBuffer()
+void CColosseumCtrl::releaseGlobals()
 {
-	if(m_pVB) {
-		m_pVB->Release();
-		m_pVB = NULL;
-	}
 	if( g_pVertices ) {
 		free(g_pVertices);
 		g_pVertices = NULL;
@@ -559,6 +581,8 @@ void CColosseumCtrl::releaseVertexBuffer()
 
 void	CColosseumCtrl::render()
 {
+	if(!m_engineInteract->getLock()) {
+			
 	if	(m_initialized) {
 		// Clear the backbuffer and the zbuffer
 		if( FAILED( m_pd3dDevice->Clear( 0, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER,
@@ -604,7 +628,6 @@ void	CColosseumCtrl::render()
 
 			m_pd3dDevice->SetMaterial(&mtrl);
 			
-			if(!m_engineInteract->getLock()) {
 				STRUCT_INSTANCES	* instance = m_engineInteract->getFirstInstance();
 				while  (instance) {
 					if	( (instance->parent)  &&
@@ -614,7 +637,7 @@ void	CColosseumCtrl::render()
 
 					instance = instance->next;
 				}
-			}
+			
 
 			// End the scene
 			if( FAILED( m_pd3dDevice->EndScene() ) ) {
@@ -630,7 +653,7 @@ void	CColosseumCtrl::render()
 		}
 		
 	}
-	
+	}
 }
 
 int		CColosseumCtrl::setupLights()

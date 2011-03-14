@@ -108,6 +108,7 @@ std::string CObjectTransferer::getIFCObject(IFCObject _object)
 			break;
 		case IFC_FOOTING:
 			object_str = "IFCFOOTING";
+			break;
 		case IFC_FURNISHINGELEMENT:
 			object_str = "IFCFURNISHINGELEMENT";
 			break;
@@ -137,6 +138,7 @@ std::string CObjectTransferer::getIFCObject(IFCObject _object)
 			break;
 		case IFC_RAILING:
 			object_str = "IFCRAILING";
+			break;
 		case IFC_RAMP:
 			object_str = "IFCRAMP";
 			break;
@@ -240,6 +242,22 @@ CObjectTransferer& CObjectTransferer::getSingleton()
 	return *instance;
 }
 
+void CObjectTransferer::refresh()
+{
+	
+	if(m_engineInteract) {
+		m_engineInteract->setLock();
+		m_engineInteract->destroyManually();
+		//TODO: make the file name variable
+		if(m_ctrl) {
+			if ( 0 == m_engineInteract->retrieveObjectGroups(const_cast<char*>(g_tempFile.c_str())))//(m_server.GetBuffer(0))))
+				m_engineInteract->enrichObjectGroups();
+			m_ctrl->fillVertexBuffer();
+		}
+		m_engineInteract->setLock(false);
+	}
+}
+
 BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, std::ofstream& outFile)
 {
 	try {
@@ -247,8 +265,8 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 		int limit = getLimit();
 		std::string objectRequired = getIFCObject(_requiredObjects);
 		TRACE("Limit: %i", limit);
-		std::string uuid = openSession(_fileId);
-		TRACE("UUID: %s", uuid.c_str());
+		//std::string uuid = openSession(_fileId);
+		//TRACE("UUID: %s", uuid.c_str());
 		
 		int offset = 0;
 		bool notFinished = true;
@@ -256,13 +274,15 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 
 		do {
 			do {
-				returned = getObject(uuid, objectRequired, offset);
+				returned = getObject(m_uuid, objectRequired, offset);
 				TRACE("%s", returned.c_str());
 				outFile << returned;
 				offset += returned.length();
 			}while( returned.length() == limit);
 			offset = 0;
-			returned = getObject(uuid, objectRequired, offset);
+			returned = getObject(m_uuid, objectRequired, offset);
+			outFile.flush();
+			refresh();
 			if(returned.length() <= 0)
 				notFinished = false;
 			else {
@@ -271,22 +291,12 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 			}
 			outFile.flush();
 		}while( notFinished );
-		closeSession(uuid);
+		//closeSession(uuid);
 		if(notFinished == false) {
-			if(m_engineInteract) {
-				m_engineInteract->setLock();
-				m_engineInteract->destroyManually();
-				//TODO: make the file name variable
-				if(m_ctrl) {
-					m_ctrl->releaseVertexBuffer();
-					if ( 0 == m_engineInteract->retrieveObjectGroups("C:\\temp.ifc"))//(m_server.GetBuffer(0))))
-						m_engineInteract->enrichObjectGroups();
-					m_ctrl->initializeDeviceBuffer();
-				}
-				m_engineInteract->setLock(false);
-				return TRUE;
-			}
+				refresh();
+				return true;
 		}
+		
 	}catch(std::exception &e) {
 		outFile.close();
 		ASSERT(1==0);
@@ -299,9 +309,29 @@ void CObjectTransferer::setIFCEngine(CIFCEngineInteract* engine)
 	m_engineInteract = engine;
 }
 
-void CObjectTransferer::setEndpoint(const std::string& _endPoint)
+void CObjectTransferer::OpenSession(int fileNumber)
 {
-	m_proxy.soap_endpoint = _endPoint.c_str();
+	try{
+		m_uuid = openSession(fileNumber);
+	}catch(std::exception &e) {
+		TRACE("%s", e.what());
+		ASSERT(1==0);
+	}
+}
+
+void CObjectTransferer::CloseSession()
+{
+	try {
+		closeSession(m_uuid);
+	}catch(std::exception &e) {
+		TRACE("%s", e.what());
+		ASSERT(1==0);
+	}
+}
+
+void CObjectTransferer::setEndpoint(const char *_endpoint)
+{
+	m_proxy.soap_endpoint = _endpoint;
 }
 
 
@@ -327,13 +357,15 @@ BOOL CObjectTransfererThread::InitInstance()
 
 CObjectTransfererThread::~CObjectTransfererThread()
 {
-	int x = 0;
+	
 }
 
 int CObjectTransfererThread::Run()
 {
-	//for(std::vector<IFCObject>::const_iterator i = m_objectVector.begin(); i != m_objectVector.end(); ++i)
+	CObjectTransferer::getSingleton().OpenSession(m_fileNumber);
 	for(int i = 1; i <= 72; ++i)
 		CObjectTransferer::getSingleton().transferObject(static_cast<IFCObject>(i), m_fileNumber, m_fileStream);
+		
+	CObjectTransferer::getSingleton().CloseSession();
 	return 0;
 }

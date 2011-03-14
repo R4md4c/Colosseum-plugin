@@ -71,7 +71,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				RegisterOutput="true"
-				AdditionalDependencies="IFCEngine.lib d3dx9.lib d3d9.lib"
+				AdditionalDependencies="IFCEngine.lib d3dx9d.lib d3d9.lib"
 				OutputFile="$(OutDir)\$(ProjectName).ocx"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;E:\Graduation Project\IFCEngineDLLv1.03\IFCEngineDLLv1.03 (build 3365)\32bit&quot;;&quot;C:\Program Files\Microsoft DirectX SDK (August 2009)\Lib\x86&quot;"

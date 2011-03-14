@@ -106,8 +106,10 @@ public:
 /* DirectX related functions */
 	void	initializeDevice();
 	void	initializeDeviceBuffer();
-	/*	Release vertex and index buffers */
-	void	releaseVertexBuffer();
+	///Fills the vertex buffer with data
+	void	fillVertexBuffer();
+	/*	Release the global vertices and indices */
+	void	releaseGlobals();
 	void	render();
 	int		setupLights();
 	int		setupMatrices();

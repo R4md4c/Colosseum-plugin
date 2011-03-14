@@ -5,6 +5,8 @@
 #include "IFCEngineInteract.h"
 #include <fstream>
 
+extern std::string g_tempFile;
+
 /** This file is going to be the base for all transfering operations of 
  * all IFC Objects */
 
@@ -85,8 +87,9 @@ enum IFCObject {
 
 class CColosseumCtrl;
 
-
-class CObjectTransferer : public CServiceConsumer
+///Protected Inheritance to ensure composition
+///and to not expose the CServiceConsumer functionality to the public
+class CObjectTransferer : protected CServiceConsumer
 {
 protected:
 	CObjectTransferer();
@@ -95,6 +98,7 @@ protected:
 	/// A helper method to map the enum to its corresponding string representation
 	std::string getIFCObject(IFCObject);
 	CColosseumCtrl *m_ctrl;
+	std::string m_uuid;
 
 public:
 	
@@ -111,13 +115,20 @@ public:
 
 	/// Set the endpoint of the service
 	/// @param the server endpoint parameter
-	void setEndpoint(const std::string&);
+	void setEndpoint(const char *endpoint);
 	
 	///Sets the engine that will be communicated with
 	///@param a pointer to an engine
 	void setIFCEngine(CIFCEngineInteract *engine);
 	void setCtrl(CColosseumCtrl *ctrl);
 	
+	///Refreshes the building information by parsing the file again and filling the 
+	///building tree
+	void refresh();
+	
+	///Opens session
+	void OpenSession(int fileNumber);
+	void CloseSession();
 };
 
 ///This is the thread class that will run CObjectTransferer in the background
