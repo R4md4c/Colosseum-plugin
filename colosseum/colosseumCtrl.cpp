@@ -151,6 +151,7 @@ CColosseumCtrl::CColosseumCtrl() : m_width(0), m_height(0), m_server(""), MULTIP
 	m_pD3D = NULL;
 	m_pd3dDevice = NULL;
 	m_pVB = NULL;
+	m_font = NULL;
 	m_initialized = false;
 	m_engineInteract = new CIFCEngineInteract();
 	m_camera = new CCamera(D3DXVECTOR3(0,0,-2.5f));
@@ -259,6 +260,8 @@ void CColosseumCtrl::OnShowWindow(BOOL bShow, UINT nStatus)
 	m_hwndRenderWindow = this->m_hWnd;
 	initializeDevice();
 	initializeDeviceBuffer();
+	initializeFont();
+
 	m_objectVector.push_back(IFC_WINDOW);
 	m_objectVector.push_back(IFC_DOOR);
 	if(m_initialized)
@@ -346,6 +349,7 @@ CColosseumCtrl::~CColosseumCtrl()
 		m_camera = NULL;
 	}
 
+
 	if( m_pVB != NULL ) {
 			if( FAILED( m_pVB->Release() ) ) {
 				g_directXStatus = -1;
@@ -369,11 +373,12 @@ CColosseumCtrl::~CColosseumCtrl()
 				return;
 			}
 		}
-		//_CrtDumpMemoryLeaks();
 
-		
-		//_CrtDumpMemoryLeaks();
-
+		if ( m_font != NULL ) {
+			if(FAILED( m_font->Release() ) ) {
+				ASSERT( 1 == 0 );
+			}
+		}
 }
 
 
@@ -388,6 +393,24 @@ void CColosseumCtrl::OnDraw(
 	
 }
 
+void CColosseumCtrl::drawText()
+{
+	D3DCOLOR fontColor = D3DCOLOR_ARGB(255, 255, 255, 255);
+	// Create a rectangle to indicate where on the screen it should be drawn
+	RECT rct;
+	rct.left=10;
+	rct.right = m_width;
+	rct.top = 60;
+	rct.bottom = rct.top + 40;
+	m_font->DrawTextA(NULL, m_textStream.str().c_str(), -1, &rct,  DT_CENTER, fontColor);
+}
+
+void CColosseumCtrl::setTextToDraw(float count)
+{
+	m_textStream.clear();
+	m_textStream.str("");
+	m_textStream << "Progress " << std::setprecision(3) << count << " %";
+}
 
 // CColosseumCtrl::DoPropExchange - Persistence support
 
@@ -534,6 +557,15 @@ void	CColosseumCtrl::initializeDeviceBuffer()
 	//}
 }
 
+void CColosseumCtrl::initializeFont()
+{
+	if ( FAILED(D3DXCreateFont( this->m_pd3dDevice, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, 
+		TEXT("Arial"), &m_font ) ) )
+	{
+		ASSERT( 1 == 0);
+	}
+}
+
 void CColosseumCtrl::fillVertexBuffer()
 {
 	if(g_noVertices) {
@@ -627,7 +659,7 @@ void	CColosseumCtrl::render()
 			mtrl.Emissive.a = 0.5f;
 
 			m_pd3dDevice->SetMaterial(&mtrl);
-			
+			if(!m_engineInteract->getLock()) {	
 				STRUCT_INSTANCES	* instance = m_engineInteract->getFirstInstance();
 				while  (instance) {
 					if	( (instance->parent)  &&
@@ -637,8 +669,8 @@ void	CColosseumCtrl::render()
 
 					instance = instance->next;
 				}
-			
-
+			}
+			drawText();
 			// End the scene
 			if( FAILED( m_pd3dDevice->EndScene() ) ) {
 				g_directXStatus = -1;

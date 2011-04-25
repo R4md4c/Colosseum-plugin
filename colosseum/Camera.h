@@ -37,7 +37,7 @@ public:
 	void moveUp(float amount) {m_position+=m_up*amount;}
 
 	// Rotations
-	void yaw(float amount); // rotate around x axis
+	void yaw(float amount); // rotate around y axis
 	void pitch(float amount); // rotate around x axis
 	void rotateCamera(float x, float y);
 

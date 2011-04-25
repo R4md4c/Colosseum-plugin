@@ -100,6 +100,15 @@ protected:
 	CColosseumCtrl *m_ctrl;
 	std::string m_uuid;
 
+	///Total number of lines in the requested file
+	unsigned long m_total_lines;
+	
+	///Number of lines downloaded
+	unsigned long m_number_of_lines;
+
+	///Counts the number of lines in the returned string
+	unsigned long countLines(const std::string& returnedString);
+
 public:
 	
 	virtual ~CObjectTransferer();

@@ -27,8 +27,6 @@ BOOL CColosseumApp::InitInstance()
 
 	if (bInit)
 	{
-		// TODO: Add your own module initialization code here.
-		
 		/* Intialize the schema name*/
 		int	i = strlen(this->m_pszHelpFilePath) - strlen(this->m_pszExeName) - 4;
 		g_ifcSchemaName = new char[i+strlen("IFC2X3.exp")+1];

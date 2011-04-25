@@ -66,3 +66,17 @@ std::string CServiceConsumer::getObject(std::string uuid, std::string entityName
 		throw std::exception(m_error.str().c_str());
 	}
 }
+
+int	CServiceConsumer::LinesCount(std::string uuid)
+{
+	_ns1__LinesCount param;
+	_ns1__LinesCountResponse response;
+	param.uuid = &uuid;
+	
+	if( m_proxy.LinesCount(&param, &response) == SOAP_OK )
+		return *(response.LinesCountResult);
+	else {
+		m_proxy.soap_stream_fault(m_error);
+		throw std::exception(m_error.str().c_str());
+	}
+}

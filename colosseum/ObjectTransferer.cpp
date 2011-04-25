@@ -4,7 +4,7 @@
 
 CObjectTransferer::CObjectTransferer() 
 : CServiceConsumer("http://localhost:2222/Service1.svc"),
-m_engineInteract(0), m_ctrl(0)
+m_engineInteract(0), m_ctrl(0), m_number_of_lines(0)
 {}
 
 CObjectTransferer::~CObjectTransferer()
@@ -236,6 +236,18 @@ std::string CObjectTransferer::getIFCObject(IFCObject _object)
 	return object_str;
 }
 
+unsigned long CObjectTransferer::countLines(const std::string& returnedString)
+{
+	unsigned long count = 0;
+	std::string::const_iterator i = returnedString.begin();
+
+	for( ; i != returnedString.end(); i++) {
+		if( *i == ';')
+			count++;
+	}
+	return count;
+}
+
 CObjectTransferer& CObjectTransferer::getSingleton()
 {
 	static std::auto_ptr<CObjectTransferer> instance(new CObjectTransferer);
@@ -260,14 +272,13 @@ void CObjectTransferer::refresh()
 
 BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, std::ofstream& outFile)
 {
+	static int count = 0;
 	try {
 		
 		int limit = getLimit();
 		std::string objectRequired = getIFCObject(_requiredObjects);
-		TRACE("Limit: %i", limit);
 		//std::string uuid = openSession(_fileId);
 		//TRACE("UUID: %s", uuid.c_str());
-		
 		int offset = 0;
 		bool notFinished = true;
 		std::string returned = "";
@@ -275,9 +286,11 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 		do {
 			do {
 				returned = getObject(m_uuid, objectRequired, offset);
-				TRACE("%s", returned.c_str());
+				TRACE("%s\n", returned.c_str());
 				outFile << returned;
-				offset += returned.length();
+				count += countLines(returned);
+				offset += returned.length();				
+				m_ctrl->setTextToDraw( ( float(count) / float(m_total_lines) ) * 100.0f  );
 			}while( returned.length() == limit);
 			offset = 0;
 			returned = getObject(m_uuid, objectRequired, offset);
@@ -287,13 +300,16 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 				notFinished = false;
 			else {
 				TRACE("%s", returned.c_str());
+				count += countLines(returned);
+				m_ctrl->setTextToDraw( ( float(count) / float(m_total_lines) ) * 100.0f  );
 				outFile << returned;
 			}
 			outFile.flush();
 		}while( notFinished );
 		//closeSession(uuid);
 		if(notFinished == false) {
-				refresh();
+				count += countLines(returned);
+				m_ctrl->setTextToDraw( ( float(count) / float(m_total_lines) ) * 100.0f  );
 				return true;
 		}
 		
@@ -313,6 +329,7 @@ void CObjectTransferer::OpenSession(int fileNumber)
 {
 	try{
 		m_uuid = openSession(fileNumber);
+		m_total_lines = LinesCount(m_uuid);
 	}catch(std::exception &e) {
 		TRACE("%s", e.what());
 		ASSERT(1==0);

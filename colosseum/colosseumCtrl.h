@@ -6,7 +6,7 @@
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
-
+#include <iomanip>
 
 // colosseumCtrl.h : Declaration of the CColosseumCtrl ActiveX Control class.
 /* DirectX 9 header files */
@@ -88,6 +88,10 @@ protected:
 	LONG m_fileNumber;
 	///The file that will the data be output to
 	std::ofstream m_tempFile;
+	
+	//Used to hold the progress text
+	std::stringstream m_textStream;
+	
 	HWND m_hwndRenderWindow;
 	bool m_initialized;
 	CIFCEngineInteract *m_engineInteract;
@@ -96,7 +100,7 @@ protected:
 	LPDIRECT3D9            m_pD3D;			// Used to create the D3DDevice
 	LPDIRECT3DDEVICE9       m_pd3dDevice;	// Our rendering device
 	LPDIRECT3DVERTEXBUFFER9 m_pVB;			// Buffer to hold vertices
-
+	ID3DXFont				*m_font;
     D3DPRESENT_PARAMETERS	m_d3dpp;
 
 	/* camera object */
@@ -106,8 +110,14 @@ public:
 /* DirectX related functions */
 	void	initializeDevice();
 	void	initializeDeviceBuffer();
+	void	initializeFont();
 	///Fills the vertex buffer with data
 	void	fillVertexBuffer();
+	
+	void	setTextToDraw(float);
+
+	//Draws text to the screen
+	void	drawText();
 	/*	Release the global vertices and indices */
 	void	releaseGlobals();
 	void	render();

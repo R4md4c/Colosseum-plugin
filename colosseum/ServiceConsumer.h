@@ -7,7 +7,7 @@
 #include <sstream>
 /**
 	This class is the main class for consuming the service.
-	Provide the same methods that the service contains.
+	Provide the same methods that the service provides.
 */
 class CServiceConsumer
 {
@@ -20,10 +20,11 @@ protected:
 public:
 	CServiceConsumer(const char *endpoint);
 	~CServiceConsumer();
-	int getLimit();
-	std::string openSession(int fileId);
-	void closeSession(std::string uuid);
-	std::string getObject(std::string uuid, std::string entityName, int offset);
+	int				getLimit();
+	std::string		openSession(int fileId);
+	void			closeSession(std::string uuid);
+	std::string		getObject(std::string uuid, std::string entityName, int offset);
+	int				LinesCount(std::string uuid);
 	
 };
 
