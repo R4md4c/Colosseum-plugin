@@ -613,7 +613,6 @@ void CColosseumCtrl::releaseGlobals()
 
 void	CColosseumCtrl::render()
 {
-	if(!m_engineInteract->getLock()) {
 			
 	if	(m_initialized) {
 		// Clear the backbuffer and the zbuffer
@@ -659,17 +658,16 @@ void	CColosseumCtrl::render()
 			mtrl.Emissive.a = 0.5f;
 
 			m_pd3dDevice->SetMaterial(&mtrl);
-			if(!m_engineInteract->getLock()) {	
-				STRUCT_INSTANCES	* instance = m_engineInteract->getFirstInstance();
-				while  (instance) {
-					if	( (instance->parent)  &&
-						  (instance->select == ITEM_CHECKED) ){
-						m_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLELIST, instance->startIndex, instance->primitiveCount);  
-					}
-
-					instance = instance->next;
+			STRUCT_INSTANCES	* instance = m_engineInteract->getFirstInstance();
+			while  (instance) {
+				if	( (instance->parent)  &&
+						(instance->select == ITEM_CHECKED) ){
+					m_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLELIST, instance->startIndex, instance->primitiveCount);  
 				}
+
+				instance = instance->next;
 			}
+			
 			drawText();
 			// End the scene
 			if( FAILED( m_pd3dDevice->EndScene() ) ) {
@@ -684,7 +682,6 @@ void	CColosseumCtrl::render()
 			return;
 		}
 		
-	}
 	}
 }
 

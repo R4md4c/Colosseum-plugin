@@ -295,7 +295,7 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 			offset = 0;
 			returned = getObject(m_uuid, objectRequired, offset);
 			outFile.flush();
-			refresh();
+			//refresh();
 			if(returned.length() <= 0)
 				notFinished = false;
 			else {
@@ -384,5 +384,7 @@ int CObjectTransfererThread::Run()
 		CObjectTransferer::getSingleton().transferObject(static_cast<IFCObject>(i), m_fileNumber, m_fileStream);
 		
 	CObjectTransferer::getSingleton().CloseSession();
+	//Added that to initialize the building structure
+	CObjectTransferer::getSingleton().refresh();
 	return 0;
 }
