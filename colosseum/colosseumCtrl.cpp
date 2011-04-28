@@ -405,11 +405,18 @@ void CColosseumCtrl::drawText()
 	m_font->DrawTextA(NULL, m_textStream.str().c_str(), -1, &rct,  DT_CENTER, fontColor);
 }
 
-void CColosseumCtrl::setTextToDraw(float count)
+void CColosseumCtrl::setTextToDraw(float count, bool hide)
 {
-	m_textStream.clear();
-	m_textStream.str("");
-	m_textStream << "Progress " << std::setprecision(3) << count << " %";
+	if( !hide ) {
+		m_textStream.clear();
+		m_textStream.str("");
+		m_textStream << "Progress " << std::setprecision(3) << count << " %";
+	}
+	else {
+		m_textStream.clear();
+		m_textStream.str("");
+	}
+
 }
 
 // CColosseumCtrl::DoPropExchange - Persistence support

@@ -267,6 +267,8 @@ void CObjectTransferer::refresh()
 			m_ctrl->fillVertexBuffer();
 		}
 		m_engineInteract->setLock(false);
+		//Clear Text
+		m_ctrl->setTextToDraw(0.0f, true);
 	}
 }
 
@@ -386,5 +388,6 @@ int CObjectTransfererThread::Run()
 	CObjectTransferer::getSingleton().CloseSession();
 	//Added that to initialize the building structure
 	CObjectTransferer::getSingleton().refresh();
+
 	return 0;
 }

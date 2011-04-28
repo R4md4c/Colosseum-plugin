@@ -114,7 +114,7 @@ public:
 	///Fills the vertex buffer with data
 	void	fillVertexBuffer();
 	
-	void	setTextToDraw(float);
+	void	setTextToDraw(float, bool hide = false);
 
 	//Draws text to the screen
 	void	drawText();
