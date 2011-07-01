@@ -16,6 +16,10 @@
 #include "Camera.h"
 #include "ServiceConsumer.h"
 #include "ObjectTransferer.h"
+#include "DXUT.h"
+#include "DXUTgui.h"
+#include "DXUTsettingsdlg.h"
+
 
 /* The format of each vertex */
 
@@ -30,6 +34,7 @@ typedef struct CUSTOMVERTEX {
 	float	nz;
 }	customvertex;
 
+void CALLBACK OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, void* pUserContext );
 
 // CColosseumCtrl : See colosseumCtrl.cpp for implementation.
 
@@ -100,8 +105,13 @@ protected:
 	LPDIRECT3D9            m_pD3D;			// Used to create the D3DDevice
 	LPDIRECT3DDEVICE9       m_pd3dDevice;	// Our rendering device
 	LPDIRECT3DVERTEXBUFFER9 m_pVB;			// Buffer to hold vertices
-	ID3DXFont				*m_font;
-    D3DPRESENT_PARAMETERS	m_d3dpp;
+	D3DPRESENT_PARAMETERS	m_d3dpp;
+
+
+
+	/*GUI Stuff */
+	CDXUTDialog			m_dialog;
+	CDXUTDialogResourceManager			m_resourceManager;
 
 	/* camera object */
 	CCamera *m_camera;
@@ -110,14 +120,16 @@ public:
 /* DirectX related functions */
 	void	initializeDevice();
 	void	initializeDeviceBuffer();
-	void	initializeFont();
+	
 	///Fills the vertex buffer with data
 	void	fillVertexBuffer();
 	
-	void	setTextToDraw(float, bool hide = false);
-
-	//Draws text to the screen
-	void	drawText();
+	void	incrementProgressBar(bool hide = false);
+/* Initialize GUI Components */
+	void	initializeGUI();
+/* Used to handle GUI Events */
+	void OnGuiEvent( UINT nEvent, int nControlID, CDXUTControl* pControl);
+	
 	/*	Release the global vertices and indices */
 	void	releaseGlobals();
 	void	render();

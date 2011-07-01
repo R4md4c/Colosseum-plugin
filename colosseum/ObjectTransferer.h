@@ -4,6 +4,9 @@
 #include "ServiceConsumer.h"
 #include "IFCEngineInteract.h"
 #include <fstream>
+#include <vector>
+
+#define MAX_DECOMPRESS_BUFFER 8000
 
 extern std::string g_tempFile;
 
@@ -91,6 +94,8 @@ class CColosseumCtrl;
 ///and to not expose the CServiceConsumer functionality to the public
 class CObjectTransferer : protected CServiceConsumer
 {
+
+
 protected:
 	CObjectTransferer();
 	/// This pointer is to communicate with IFC engine

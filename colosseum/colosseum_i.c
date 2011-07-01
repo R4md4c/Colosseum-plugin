@@ -6,7 +6,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0500 */
-/* at Sat Mar 12 18:35:07 2011
+/* at Fri Jul 01 16:22:08 2011
  */
 /* Compiler settings for .\colosseum.idl:
     Oicf, W1, Zp8, env=Win32 (32b run)

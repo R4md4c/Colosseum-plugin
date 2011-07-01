@@ -236,6 +236,7 @@ std::string CObjectTransferer::getIFCObject(IFCObject _object)
 	return object_str;
 }
 
+
 unsigned long CObjectTransferer::countLines(const std::string& returnedString)
 {
 	unsigned long count = 0;
@@ -268,7 +269,6 @@ void CObjectTransferer::refresh()
 		}
 		m_engineInteract->setLock(false);
 		//Clear Text
-		m_ctrl->setTextToDraw(0.0f, true);
 	}
 }
 
@@ -292,7 +292,6 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 				outFile << returned;
 				count += countLines(returned);
 				offset += returned.length();				
-				m_ctrl->setTextToDraw( ( float(count) / float(m_total_lines) ) * 100.0f  );
 			}while( returned.length() == limit);
 			offset = 0;
 			returned = getObject(m_uuid, objectRequired, offset);
@@ -303,7 +302,6 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 			else {
 				TRACE("%s", returned.c_str());
 				count += countLines(returned);
-				m_ctrl->setTextToDraw( ( float(count) / float(m_total_lines) ) * 100.0f  );
 				outFile << returned;
 			}
 			outFile.flush();
@@ -311,7 +309,7 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 		//closeSession(uuid);
 		if(notFinished == false) {
 				count += countLines(returned);
-				m_ctrl->setTextToDraw( ( float(count) / float(m_total_lines) ) * 100.0f  );
+				m_ctrl->incrementProgressBar();
 				return true;
 		}
 		
@@ -331,7 +329,7 @@ void CObjectTransferer::OpenSession(int fileNumber)
 {
 	try{
 		m_uuid = openSession(fileNumber);
-		m_total_lines = LinesCount(m_uuid);
+		m_total_lines = 0; //Remove that
 	}catch(std::exception &e) {
 		TRACE("%s", e.what());
 		ASSERT(1==0);

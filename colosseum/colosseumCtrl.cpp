@@ -18,6 +18,27 @@
 //Maximum Number of vertices
 #define MAX_VERTICES_SIZE 100000
 
+/* GUI coordinates information */
+const int BUTTON_WIDTH = 50;
+const int BUTTON_HEIGHT = 60;
+const int BUTTON_MARGIN_X = 40;
+const int BUTTON_MARGIN_Y = 40;
+const int SLIDER_WIDTH = 100;
+const int SLIDER_HEIGHT = 20;
+
+const int SLIDER_MIN_VALUE = 0;
+const int SLIDER_MAX_VALUE = 72;
+
+/* Controls ID */
+#define IDC_PLUS_BUTTON 1
+#define IDC_MINUS_BUTTON IDC_PLUS_BUTTON + 1
+#define IDC_LEFT_BUTTON IDC_MINUS_BUTTON + 1
+#define IDC_RIGHT_BUTTON IDC_LEFT_BUTTON + 1
+#define IDC_UP_BUTTON IDC_RIGHT_BUTTON + 1
+#define IDC_DOWN_BUTTON IDC_UP_BUTTON + 1
+#define IDC_SLIDER IDC_DOWN_BUTTON + 1
+
+
 /* An error indication value non-zero if error exists */
 int		g_directXStatus = 0;
 
@@ -46,7 +67,11 @@ BEGIN_MESSAGE_MAP(CColosseumCtrl, COleControl)
 	ON_WM_MOUSEMOVE()
 END_MESSAGE_MAP()
 
-
+void CALLBACK OnGUIEvent( UINT nEvent, int nControlID, CDXUTControl* pControl, void* pUserContext )
+{
+	CColosseumCtrl* ctrl = (CColosseumCtrl*) pUserContext;
+	ctrl->OnGuiEvent(nEvent, nControlID, pControl);
+}
 
 // Dispatch map
 
@@ -151,7 +176,6 @@ CColosseumCtrl::CColosseumCtrl() : m_width(0), m_height(0), m_server(""), MULTIP
 	m_pD3D = NULL;
 	m_pd3dDevice = NULL;
 	m_pVB = NULL;
-	m_font = NULL;
 	m_initialized = false;
 	m_engineInteract = new CIFCEngineInteract();
 	m_camera = new CCamera(D3DXVECTOR3(0,0,-2.5f));
@@ -260,8 +284,10 @@ void CColosseumCtrl::OnShowWindow(BOOL bShow, UINT nStatus)
 	m_hwndRenderWindow = this->m_hWnd;
 	initializeDevice();
 	initializeDeviceBuffer();
-	initializeFont();
-
+	
+	
+	
+	initializeGUI();
 	m_objectVector.push_back(IFC_WINDOW);
 	m_objectVector.push_back(IFC_DOOR);
 	if(m_initialized)
@@ -309,6 +335,7 @@ LRESULT CColosseumCtrl::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 	  * so that it is dealed with in the OnMouseMove method
 	  */
 	
+	
 	switch (message)
 	{
 		case WM_LBUTTONDOWN:
@@ -325,6 +352,8 @@ LRESULT CColosseumCtrl::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 			iZoomMouseY = HIWORD(lParam);
 			break;
 	}
+	m_resourceManager.MsgProc(m_hWnd, message, wParam, lParam);
+	m_dialog.MsgProc(m_hWnd, message, wParam, lParam);
 	if(m_initialized)
 			render();
 	return COleControl::WindowProc(message, wParam, lParam);
@@ -374,11 +403,6 @@ CColosseumCtrl::~CColosseumCtrl()
 			}
 		}
 
-		if ( m_font != NULL ) {
-			if(FAILED( m_font->Release() ) ) {
-				ASSERT( 1 == 0 );
-			}
-		}
 }
 
 
@@ -393,30 +417,16 @@ void CColosseumCtrl::OnDraw(
 	
 }
 
-void CColosseumCtrl::drawText()
-{
-	D3DCOLOR fontColor = D3DCOLOR_ARGB(255, 255, 255, 255);
-	// Create a rectangle to indicate where on the screen it should be drawn
-	RECT rct;
-	rct.left=10;
-	rct.right = m_width;
-	rct.top = 60;
-	rct.bottom = rct.top + 40;
-	m_font->DrawTextA(NULL, m_textStream.str().c_str(), -1, &rct,  DT_CENTER, fontColor);
-}
 
-void CColosseumCtrl::setTextToDraw(float count, bool hide)
+void CColosseumCtrl::incrementProgressBar(bool hide )
 {
-	if( !hide ) {
-		m_textStream.clear();
-		m_textStream.str("");
-		m_textStream << "Progress " << std::setprecision(3) << count << " %";
-	}
-	else {
-		m_textStream.clear();
-		m_textStream.str("");
-	}
-
+	CDXUTSlider* slider = m_dialog.GetSlider(IDC_SLIDER);
+	int x = slider->GetValue();
+	
+	if(x >= SLIDER_MAX_VALUE - 1 )
+		slider->SetVisible(false);
+	
+	slider->SetValue(++x);
 }
 
 // CColosseumCtrl::DoPropExchange - Persistence support
@@ -547,6 +557,12 @@ void	CColosseumCtrl::initializeDevice()
 			ASSERT(1==0);
 			return;
 		}
+		/* Initialize the device in the DXUT framework device explicitly */
+		if( FAILED ( m_resourceManager.OnD3D9CreateDevice( m_pd3dDevice ) ) ) {
+			ASSERT(1==0);
+			return;
+		}
+
 }
 
 void	CColosseumCtrl::initializeDeviceBuffer()
@@ -564,14 +580,6 @@ void	CColosseumCtrl::initializeDeviceBuffer()
 	//}
 }
 
-void CColosseumCtrl::initializeFont()
-{
-	if ( FAILED(D3DXCreateFont( this->m_pd3dDevice, 20, 0, FW_BOLD, 0, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, 
-		TEXT("Arial"), &m_font ) ) )
-	{
-		ASSERT( 1 == 0);
-	}
-}
 
 void CColosseumCtrl::fillVertexBuffer()
 {
@@ -675,7 +683,11 @@ void	CColosseumCtrl::render()
 				instance = instance->next;
 			}
 			
-			drawText();
+			
+
+			/* Draw the GUI */
+			
+			m_dialog.OnRender(100.0f);
 			// End the scene
 			if( FAILED( m_pd3dDevice->EndScene() ) ) {
 				g_directXStatus = -1;
@@ -814,4 +826,76 @@ int	CColosseumCtrl::setupMatrices()
 	}
 
 	return	0;
+}
+
+
+void CColosseumCtrl::initializeGUI()
+{
+	m_resourceManager.createStateBlock();
+	m_dialog.Init(&m_resourceManager);
+	m_dialog.SetCallback( OnGUIEvent, (void*) this  );
+	
+	int centerX = m_width / 2;
+	int centerY = m_height / 2;
+	int rightX = m_width - 100;
+	int bottomY = m_height - 100;
+
+	m_dialog.AddButton(IDC_UP_BUTTON, L"Up", centerX, bottomY - BUTTON_MARGIN_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+	m_dialog.AddButton(IDC_DOWN_BUTTON, L"Down", centerX, bottomY + BUTTON_MARGIN_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+	m_dialog.AddButton(IDC_LEFT_BUTTON, L"Left", centerX - BUTTON_MARGIN_X, bottomY, BUTTON_WIDTH, BUTTON_HEIGHT);
+	m_dialog.AddButton(IDC_RIGHT_BUTTON, L"Right", centerX + BUTTON_MARGIN_X, bottomY, BUTTON_WIDTH, BUTTON_HEIGHT);
+
+	m_dialog.AddButton(IDC_PLUS_BUTTON, L"+", rightX, centerY - BUTTON_MARGIN_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+	m_dialog.AddButton(IDC_MINUS_BUTTON, L"-", rightX, centerY + BUTTON_MARGIN_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
+	
+	/* Initialize the range of the slider will be from 0 to 74(the number of IFCObjects see the enum in ObjectTransferer.h) */
+	m_dialog.AddSlider(IDC_SLIDER, centerX - 50, centerY, SLIDER_WIDTH, SLIDER_HEIGHT, SLIDER_MIN_VALUE, SLIDER_MAX_VALUE, 0);
+	
+	
+}
+
+
+void CColosseumCtrl::OnGuiEvent( UINT nEvent, int nControlID, CDXUTControl* pControl)
+{
+		switch( nControlID ) {
+			case IDC_PLUS_BUTTON:
+				m_camera->moveForward(MULTIPLY_RATIO);
+				if  (m_initialized) {
+					render();
+				}
+				break;
+			case IDC_MINUS_BUTTON:
+				m_camera->moveForward( -1.0f * MULTIPLY_RATIO);
+								
+				if  (m_initialized) {
+					render();
+				}
+				break;	
+			case IDC_LEFT_BUTTON:
+				m_camera->yaw( -1.0f * MULTIPLY_RATIO);
+				if  (m_initialized) {
+					render();
+				}
+				break;
+			case IDC_RIGHT_BUTTON:
+				m_camera->yaw(MULTIPLY_RATIO);
+				if  (m_initialized) {
+					render();
+				}
+				break;
+			case IDC_UP_BUTTON:
+				m_camera->pitch(-1.0 * MULTIPLY_RATIO);
+				if  (m_initialized) {
+					render();
+				}
+				break;
+			case IDC_DOWN_BUTTON:
+			
+				m_camera->pitch(MULTIPLY_RATIO);
+				if  (m_initialized) {
+					render();
+				}
+				break;
+		}
+	
 }

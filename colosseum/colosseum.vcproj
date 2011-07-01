@@ -47,7 +47,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Program Files\Microsoft DirectX SDK (August 2009)\Include&quot;"
+				AdditionalIncludeDirectories="DXUT\Optional;DXUT\Core;&quot;C:\Program Files\Microsoft DirectX SDK (August 2009)\Include&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -71,7 +71,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				RegisterOutput="true"
-				AdditionalDependencies="IFCEngine.lib d3dx9d.lib d3d9.lib"
+				AdditionalDependencies="IFCEngine.lib imm32.lib version.lib dxerr.lib dxguid.lib d3dx9d.lib d3d9.lib d3dx10d.lib"
 				OutputFile="$(OutDir)\$(ProjectName).ocx"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;E:\Graduation Project\IFCEngineDLLv1.03\IFCEngineDLLv1.03 (build 3365)\32bit&quot;;&quot;C:\Program Files\Microsoft DirectX SDK (August 2009)\Lib\x86&quot;"
@@ -366,6 +366,58 @@
 					>
 				</File>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="DXUT"
+			>
+			<File
+				RelativePath=".\DXUT\Core\DXUT.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Core\DXUT.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Core\DXUTenum.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Core\DXUTenum.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Optional\DXUTgui.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Optional\DXUTgui.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Core\DXUTmisc.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Core\DXUTmisc.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Optional\DXUTres.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Optional\DXUTres.h"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Optional\DXUTsettingsdlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DXUT\Optional\DXUTsettingsdlg.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
