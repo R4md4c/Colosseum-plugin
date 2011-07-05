@@ -45,7 +45,7 @@ public:
 	STRUCT_INSTANCES	* addObject(STRUCT_INSTANCES * parent, int id, char * name);
 	void	retrieveObjects(char * ObjectSPFFName, char * ObjectGroupName);
 	int		retrieveObjectGroups(char * fileName);
-	void	enrichObjectGroups();
+	void	enrichObjectGroups(int&, int&);
 	STRUCT_INSTANCES  *getFirstInstance() const;	
 	///Destroy the current object manually 
 	void destroyManually();

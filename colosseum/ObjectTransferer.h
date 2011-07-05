@@ -3,12 +3,11 @@
 #include "stdafx.h"
 #include "ServiceConsumer.h"
 #include "IFCEngineInteract.h"
+#include "EndpointModel.h"
 #include <fstream>
 #include <vector>
 
-#define MAX_DECOMPRESS_BUFFER 8000
 
-extern std::string g_tempFile;
 
 /** This file is going to be the base for all transfering operations of 
  * all IFC Objects */
@@ -92,9 +91,10 @@ class CColosseumCtrl;
 
 ///Protected Inheritance to ensure composition
 ///and to not expose the CServiceConsumer functionality to the public
-class CObjectTransferer : protected CServiceConsumer
+class CObjectTransferer
 {
-
+private:
+	CServiceConsumer m_serviceConsumer;
 
 protected:
 	CObjectTransferer();
@@ -129,7 +129,7 @@ public:
 
 	/// Set the endpoint of the service
 	/// @param the server endpoint parameter
-	void setEndpoint(const char *endpoint);
+	void setEndpoint(const std::string& endpoint);
 	
 	///Sets the engine that will be communicated with
 	///@param a pointer to an engine
@@ -138,7 +138,7 @@ public:
 	
 	///Refreshes the building information by parsing the file again and filling the 
 	///building tree
-	void refresh();
+	void refresh(const std::string&, int& noVertices, int& noIndices);
 	
 	///Opens session
 	void OpenSession(int fileNumber);
@@ -148,11 +148,9 @@ public:
 ///This is the thread class that will run CObjectTransferer in the background
 class CObjectTransfererThread : public CWinThread
 {
-	std::ofstream& m_fileStream;
-	long m_fileNumber;
-	const std::vector<IFCObject> &m_objectVector;
+	const std::vector<CEndpointModel*> &m_endpointModelVector;
 public:
-	CObjectTransfererThread(std::ofstream&, const std::vector<IFCObject>& objectVector, long fileNumber);
+	CObjectTransfererThread(const std::vector<CEndpointModel*>& endpointModelVector);
 	virtual ~CObjectTransfererThread();
 	virtual BOOL InitInstance();
 	virtual int Run();

@@ -16,7 +16,7 @@
 #endif
 //TODO: find a way to make it dynamic
 //Maximum Number of vertices
-#define MAX_VERTICES_SIZE 100000
+#define MAX_VERTICES_SIZE 1000000
 
 /* GUI coordinates information */
 const int BUTTON_WIDTH = 50;
@@ -51,9 +51,6 @@ std::string g_tempFile;
 
 D3DXVECTOR3		g_vecOrigin;
 
-///The temporary file name that is going to be filled with ifc objects
-///Change the file here if you want
-const std::string g_tempFileName = "C:\\temp.ifc";
 IMPLEMENT_DYNCREATE(CColosseumCtrl, COleControl)
 
 
@@ -180,19 +177,6 @@ CColosseumCtrl::CColosseumCtrl() : m_width(0), m_height(0), m_server(""), MULTIP
 	m_engineInteract = new CIFCEngineInteract();
 	m_camera = new CCamera(D3DXVECTOR3(0,0,-2.5f));
 
-	///Create a temporary file using a unique timestamp
-	TCHAR temp_path[MAX_PATH];
-	///Get the temp path
-	DWORD retValue = GetTempPath(MAX_PATH, temp_path);
-	//If the returned number is greater than the number of MAX_PATH then stop execution
-	if(retValue > MAX_PATH)
-		ASSERT(1==0);
-	std::stringstream ss;
-	unsigned __int64 time_stamp = __rdtsc();
-	ss << temp_path << "temp" << time_stamp << ".ifc";
-	g_tempFile = ss.str();
-	m_tempFile.open(g_tempFile.c_str());
-
 
 	CObjectTransferer::getSingleton().setIFCEngine(m_engineInteract);
 	
@@ -213,21 +197,12 @@ void CColosseumCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 	 * A for left strafing
 	 * D for right straging
 	 */
-	CObjectTransfererThread *t = NULL;
 	switch( nChar ) {
 			case 0x57: //W KEY
 				
 				m_camera->moveForward(MULTIPLY_RATIO);
 								
 				if  (m_initialized) {
-					render();
-				}
-				break;
-			case 0x58:
-				//CObjectTransferer::getSingleton().transferObject(IFC_WINDOW, m_fileNumber, m_tempFile);
-				t = new CObjectTransfererThread(this->m_tempFile, m_objectVector, m_fileNumber);
-				t->CreateThread();
-				if(m_initialized) {
 					render();
 				}
 				break;
@@ -292,7 +267,7 @@ void CColosseumCtrl::OnShowWindow(BOOL bShow, UINT nStatus)
 	m_objectVector.push_back(IFC_DOOR);
 	if(m_initialized)
 			render();		
-	CObjectTransfererThread *t = new CObjectTransfererThread(this->m_tempFile, m_objectVector, m_fileNumber);
+	CObjectTransfererThread *t = new CObjectTransfererThread(m_endpointModelVector);
 	t->CreateThread();
 				
 }
@@ -368,7 +343,10 @@ LRESULT CColosseumCtrl::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 CColosseumCtrl::~CColosseumCtrl()
 {
 	// TODO: Cleanup your control's instance data here.
-	m_tempFile.close();
+	for(size_t i = 0; i < m_endpointModelVector.size(); i++) {
+		delete m_endpointModelVector[i];
+	}
+	m_endpointModelVector.clear();
 	if( m_engineInteract ) {
 		delete m_engineInteract;
 		m_engineInteract = NULL;
@@ -423,7 +401,7 @@ void CColosseumCtrl::incrementProgressBar(bool hide )
 	CDXUTSlider* slider = m_dialog.GetSlider(IDC_SLIDER);
 	int x = slider->GetValue();
 	
-	if(x >= SLIDER_MAX_VALUE - 1 )
+	if(x >= ((SLIDER_MAX_VALUE - 1) * m_endpointModelVector.size()))
 		slider->SetVisible(false);
 	
 	slider->SetValue(++x);
@@ -438,10 +416,62 @@ void CColosseumCtrl::DoPropExchange(CPropExchange* pPX)
 	// TODO: Call PX_ functions for each persistent custom property.
 	
 	
-	PX_String(pPX, _T("Server"), m_server, _T("http://localhost:2222/Service1.svc"));
-	PX_Long(pPX, _T("File"), m_fileNumber);
+	PX_String(pPX, _T("server"), m_server, _T("http://localhost:2222/Service1.svc"));
+	//PX_Long(pPX, _T("File"), m_fileNumber);
 	
+	parseParameters(std::string((LPCSTR)m_server));
+
+	///Create a temporary file using a unique timestamp
+	TCHAR temp_path[MAX_PATH];
+	///Get the temp path
+	DWORD retValue = GetTempPath(MAX_PATH, temp_path);
+	//If the returned number is greater than the number of MAX_PATH then stop execution
+	if(retValue > MAX_PATH)
+		ASSERT(1==0);
+	std::stringstream ss;
+	unsigned __int64 time_stamp;
+	/* Initialize the file streams in the endpoint model vector*/
+	for(size_t i = 0; i < m_endpointModelVector.size(); i++) {
+		time_stamp = __rdtsc();
+		ss << temp_path << "temp" << time_stamp + i << ".ifc";
+		m_endpointModelVector[i]->setFileName(ss.str());
+		m_endpointModelVector[i]->openFile(ss.str());
+		ss.str("");
+	}
 	
+}
+
+void CColosseumCtrl::parseParameters(const std::string& serverString)
+{
+	size_t i = 0, j = 0;
+	std::string endpoint; 
+	/* A temporary string to hold arbitrary strings */
+	std::string temp;
+	for(i = 0; i < serverString.size(); i++) {
+		size_t c = serverString.find_first_of('?', i);
+		/* Extract the URL first */
+		for(j = i; j < c; j++) {
+			endpoint += serverString[j];
+		}
+		c = serverString.find_first_of('=', i);
+		c++;
+		j = c;
+		c = serverString.find_first_of('|', i);
+		if( c != std::string::npos ) {
+			for( ;j < c ; j++) {
+				temp += serverString[j];
+			}
+		}
+		else {
+			for(; j < serverString.size(); j++) {
+				temp += serverString[j];
+			}
+		}
+		i = j;
+		m_endpointModelVector.push_back( new CEndpointModel(endpoint, atoi(temp.c_str())));
+		endpoint.clear();
+		temp.clear();
+	}
 }
 
 
@@ -580,20 +610,32 @@ void	CColosseumCtrl::initializeDeviceBuffer()
 	//}
 }
 
-
-void CColosseumCtrl::fillVertexBuffer()
+void CColosseumCtrl::clearVertexBuffers()
 {
-	if(g_noVertices) {
-		if( FAILED( m_pVB->Lock( 0, 0, (void **)&g_pVerticesDeviceBuffer, D3DLOCK_DISCARD ) ) ) {
+	if(g_pVertices) {
+		free(g_pVertices);
+		g_pVertices = NULL;
+	}
+
+	if(g_pIndices) {
+		free(g_pIndices);
+		g_pIndices = NULL;
+	}
+}
+
+void CColosseumCtrl::fillVertexBuffer(const int& noVertices, const int& noIndices)
+{
+	if(noVertices) {
+		if( FAILED( m_pVB->Lock( 0, 0, (void **)&g_pVerticesDeviceBuffer, D3DLOCK_NOOVERWRITE ) ) ) {
 				ASSERT(1==0);
 				return;
 			}
 
 		int i = 0;
 		int z;
-		while  (i < g_noIndices) {
+		while  (i < noIndices) {
 			z = g_pIndices[i];
-			ASSERT(g_pIndices[i] < g_noVertices);
+			ASSERT(g_pIndices[i] < noVertices);
 			memcpy(&(((CUSTOMVERTEX *) g_pVerticesDeviceBuffer)[i]), &(((CUSTOMVERTEX *) g_pVertices)[g_pIndices[i]]), sizeof(CUSTOMVERTEX));
 			i++;
 		}
@@ -848,8 +890,8 @@ void CColosseumCtrl::initializeGUI()
 	m_dialog.AddButton(IDC_PLUS_BUTTON, L"+", rightX, centerY - BUTTON_MARGIN_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
 	m_dialog.AddButton(IDC_MINUS_BUTTON, L"-", rightX, centerY + BUTTON_MARGIN_Y, BUTTON_WIDTH, BUTTON_HEIGHT);
 	
-	/* Initialize the range of the slider will be from 0 to 74(the number of IFCObjects see the enum in ObjectTransferer.h) */
-	m_dialog.AddSlider(IDC_SLIDER, centerX - 50, centerY, SLIDER_WIDTH, SLIDER_HEIGHT, SLIDER_MIN_VALUE, SLIDER_MAX_VALUE, 0);
+	/* Initialize the range of the slider will be from 0 to 72(the number of IFCObjects see the enum in ObjectTransferer.h) */
+	m_dialog.AddSlider(IDC_SLIDER, centerX - 50, centerY, SLIDER_WIDTH, SLIDER_HEIGHT, SLIDER_MIN_VALUE, SLIDER_MAX_VALUE * m_endpointModelVector.size(), 0);
 	
 	
 }
@@ -884,7 +926,7 @@ void CColosseumCtrl::OnGuiEvent( UINT nEvent, int nControlID, CDXUTControl* pCon
 				}
 				break;
 			case IDC_UP_BUTTON:
-				m_camera->pitch(-1.0 * MULTIPLY_RATIO);
+				m_camera->pitch(-1.0f * MULTIPLY_RATIO);
 				if  (m_initialized) {
 					render();
 				}

@@ -108,7 +108,6 @@ int	 CIFCEngineInteract::retrieveObjectGroups(char * fileName)
 		retrieveObjects(_T("IFCGRID"), _T("Grids"));
 		retrieveObjects(_T("IFCMECHANICALFASTENER"), _T("Mechanical Fasteners"));		
 		retrieveObjects(_T("IFCMEMBER"), _T("Members"));		
-		//retrieveObjects(_T("IFCOPENINGELEMENT"), _T("Opening Elements"));		
 		retrieveObjects(_T("IFCPILE"), _T("Piles"));		
 		retrieveObjects(_T("IFCPLATE"), _T("Plates"));		
 		retrieveObjects(_T("IFCPROJECTIONELEMENT"), _T("Projection Elements"));		
@@ -122,7 +121,6 @@ int	 CIFCEngineInteract::retrieveObjectGroups(char * fileName)
 		retrieveObjects(_T("IFCROUNDEDEDGEFEATURE"), _T("Rounded Edge Features"));		
 		retrieveObjects(_T("IFCSITE"), _T("Sites"));		
 		retrieveObjects(_T("IFCSLAB"), _T("Slabs"));		
-		//retrieveObjects(_T("IFCSPACE"), _T("Spaces"));		
 		retrieveObjects(_T("IFCSTAIR"), _T("Stairs"));		
 		retrieveObjects(_T("IFCSTAIRFLIGHT"), _T("Stair Flights"));		
 		retrieveObjects(_T("IFCSTRUCTURALCURVECONNECTION"), _T("Structural Curve Connections"));		
@@ -152,7 +150,7 @@ int	 CIFCEngineInteract::retrieveObjectGroups(char * fileName)
 	return	0;
 }
 
-void  CIFCEngineInteract::enrichObjectGroups()
+void  CIFCEngineInteract::enrichObjectGroups(int& vertices_number, int& indices_number)
 {
 	STRUCT_INSTANCES	* instance;
 
@@ -160,9 +158,10 @@ void  CIFCEngineInteract::enrichObjectGroups()
 		//
 		//	We need to build up the 3D structure in the IFC Engine DLL to retrieve geometrical data
 		//
-		initializeModelling(g_model, &g_noVertices, &g_noIndices, 1);
-		g_pVertices = (float *) malloc(g_noVertices * sizeof(CUSTOMVERTEX));
-		g_pIndices = (int *) malloc(g_noIndices * sizeof(int));
+		//initializeModelling(g_model, &g_noVertices, &g_noIndices, 1);
+		initializeModelling(g_model, &vertices_number, &indices_number, 1);
+		g_pVertices = (float *) malloc(vertices_number * sizeof(CUSTOMVERTEX));
+		g_pIndices = (int *) malloc(indices_number * sizeof(unsigned int));
 		finalizeModelling(g_model, &g_pVertices[0], &g_pIndices[0], D3DFVF_CUSTOMVERTEX);
 
 		instance = m_firstInstance;
@@ -220,6 +219,6 @@ CIFCEngineInteract::~CIFCEngineInteract()
 		this->m_lastInstance = NULL;
 		temp = NULL;
 	}
-	free(g_pIndices);
-	free(g_pVertices);
+	//free(g_pIndices);
+	//free(g_pVertices);
 }

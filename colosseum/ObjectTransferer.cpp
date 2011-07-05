@@ -3,13 +3,12 @@
 
 
 CObjectTransferer::CObjectTransferer() 
-: CServiceConsumer("http://localhost:2222/Service1.svc"),
-m_engineInteract(0), m_ctrl(0), m_number_of_lines(0)
+: m_engineInteract(0), m_ctrl(0), m_number_of_lines(0)
 {}
 
 CObjectTransferer::~CObjectTransferer()
 {
-	m_proxy.destroy();
+	m_serviceConsumer.getProxy().destroy();
 }
 
 std::string CObjectTransferer::getIFCObject(IFCObject _object)
@@ -255,20 +254,21 @@ CObjectTransferer& CObjectTransferer::getSingleton()
 	return *instance;
 }
 
-void CObjectTransferer::refresh()
+void CObjectTransferer::refresh(const std::string& fileName, int& noVertices, int& noIndices)
 {
-	
 	if(m_engineInteract) {
+		/* Locks the building data structure */
 		m_engineInteract->setLock();
+		/* Destroy the building to reinstantiate it again */
 		m_engineInteract->destroyManually();
-		//TODO: make the file name variable
 		if(m_ctrl) {
-			if ( 0 == m_engineInteract->retrieveObjectGroups(const_cast<char*>(g_tempFile.c_str())))//(m_server.GetBuffer(0))))
-				m_engineInteract->enrichObjectGroups();
-			m_ctrl->fillVertexBuffer();
+			m_ctrl->clearVertexBuffers();
+			if ( 0 == m_engineInteract->retrieveObjectGroups(const_cast<char*>(fileName.c_str())))
+				m_engineInteract->enrichObjectGroups(noVertices, noIndices);
+			m_ctrl->fillVertexBuffer(noVertices, noIndices);
 		}
 		m_engineInteract->setLock(false);
-		//Clear Text
+		
 	}
 }
 
@@ -276,8 +276,7 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 {
 	static int count = 0;
 	try {
-		
-		int limit = getLimit();
+		int limit = m_serviceConsumer.getLimit();
 		std::string objectRequired = getIFCObject(_requiredObjects);
 		//std::string uuid = openSession(_fileId);
 		//TRACE("UUID: %s", uuid.c_str());
@@ -287,14 +286,14 @@ BOOL CObjectTransferer::transferObject(IFCObject _requiredObjects, int _fileId, 
 
 		do {
 			do {
-				returned = getObject(m_uuid, objectRequired, offset);
+				returned = m_serviceConsumer.getObject(m_uuid, objectRequired, offset);
 				TRACE("%s\n", returned.c_str());
 				outFile << returned;
 				count += countLines(returned);
 				offset += returned.length();				
 			}while( returned.length() == limit);
 			offset = 0;
-			returned = getObject(m_uuid, objectRequired, offset);
+			returned = m_serviceConsumer.getObject(m_uuid, objectRequired, offset);
 			outFile.flush();
 			//refresh();
 			if(returned.length() <= 0)
@@ -328,7 +327,7 @@ void CObjectTransferer::setIFCEngine(CIFCEngineInteract* engine)
 void CObjectTransferer::OpenSession(int fileNumber)
 {
 	try{
-		m_uuid = openSession(fileNumber);
+		m_uuid = m_serviceConsumer.openSession(fileNumber);
 		m_total_lines = 0; //Remove that
 	}catch(std::exception &e) {
 		TRACE("%s", e.what());
@@ -339,16 +338,16 @@ void CObjectTransferer::OpenSession(int fileNumber)
 void CObjectTransferer::CloseSession()
 {
 	try {
-		closeSession(m_uuid);
+		m_serviceConsumer.closeSession(m_uuid);
 	}catch(std::exception &e) {
 		TRACE("%s", e.what());
 		ASSERT(1==0);
 	}
 }
 
-void CObjectTransferer::setEndpoint(const char *_endpoint)
+void CObjectTransferer::setEndpoint(const std::string& _endpoint)
 {
-	m_proxy.soap_endpoint = _endpoint;
+	m_serviceConsumer.setEndpointString(_endpoint);
 }
 
 
@@ -361,10 +360,8 @@ void CObjectTransferer::setCtrl(CColosseumCtrl *ctrl)
 /* Begining of the CObjectTransfererThread Definition */
 
 
-CObjectTransfererThread::CObjectTransfererThread(std::ofstream& _stream, const std::vector<IFCObject> &objectVector, long fileNumber) 
-: m_fileStream(_stream), 
-m_fileNumber(fileNumber),
-m_objectVector(objectVector)
+CObjectTransfererThread::CObjectTransfererThread(const std::vector<CEndpointModel*>& endpointModelVector):
+m_endpointModelVector(endpointModelVector)
 {}
 
 BOOL CObjectTransfererThread::InitInstance()
@@ -379,13 +376,18 @@ CObjectTransfererThread::~CObjectTransfererThread()
 
 int CObjectTransfererThread::Run()
 {
-	CObjectTransferer::getSingleton().OpenSession(m_fileNumber);
-	for(int i = 1; i <= 72; ++i)
-		CObjectTransferer::getSingleton().transferObject(static_cast<IFCObject>(i), m_fileNumber, m_fileStream);
+	for(size_t i = 0; i < m_endpointModelVector.size(); i++) {
+		CObjectTransferer::getSingleton().setEndpoint(m_endpointModelVector[i]->getEndpoint());
+		CObjectTransferer::getSingleton().OpenSession(m_endpointModelVector[i]->getFileNumber());
+		for(int j = 1; j <= 72; ++j)
+			CObjectTransferer::getSingleton().transferObject(static_cast<IFCObject>(j), m_endpointModelVector[i]->getFileNumber(), m_endpointModelVector[i]->getFileStream());
 		
-	CObjectTransferer::getSingleton().CloseSession();
-	//Added that to initialize the building structure
-	CObjectTransferer::getSingleton().refresh();
+		CObjectTransferer::getSingleton().CloseSession();
+		//Added that to initialize the building structure
+		CObjectTransferer::getSingleton().refresh(m_endpointModelVector[i]->getFileName(), \
+			m_endpointModelVector[i]->getVerticesNumber(), \
+			m_endpointModelVector[i]->getIndicesNumber());
+	}
 
 	return 0;
 }

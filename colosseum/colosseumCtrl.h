@@ -19,7 +19,7 @@
 #include "DXUT.h"
 #include "DXUTgui.h"
 #include "DXUTsettingsdlg.h"
-
+#include "EndpointModel.h"
 
 /* The format of each vertex */
 
@@ -91,11 +91,10 @@ protected:
 	LONG m_height;
 	CString m_server;
 	LONG m_fileNumber;
-	///The file that will the data be output to
-	std::ofstream m_tempFile;
+	/* A vector that holds the parameter */
+	std::vector<CEndpointModel*> m_endpointModelVector;
 	
-	//Used to hold the progress text
-	std::stringstream m_textStream;
+	
 	
 	HWND m_hwndRenderWindow;
 	bool m_initialized;
@@ -121,8 +120,9 @@ public:
 	void	initializeDevice();
 	void	initializeDeviceBuffer();
 	
+	void clearVertexBuffers();
 	///Fills the vertex buffer with data
-	void	fillVertexBuffer();
+	void	fillVertexBuffer(const int& noVertices, const int& noIndices);
 	
 	void	incrementProgressBar(bool hide = false);
 /* Initialize GUI Components */
@@ -148,6 +148,9 @@ protected:
 	LONG GetHeight(void) const ;
 	
 	BSTR GetServer(void) const;
+
+	/* Parse the server parameter obtained from HTML and initialize the endpoint models */
+	void parseParameters(const std::string& serverString);
 	
 };
 

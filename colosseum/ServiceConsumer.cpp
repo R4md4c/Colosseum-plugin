@@ -6,6 +6,9 @@ CServiceConsumer::CServiceConsumer(const char* _endpoint)
 	m_proxy.soap_endpoint = _endpoint;
 }
 
+CServiceConsumer::CServiceConsumer()
+{}
+
 CServiceConsumer::~CServiceConsumer()
 {
 	m_proxy.destroy();
@@ -65,6 +68,11 @@ std::string CServiceConsumer::getObject(std::string uuid, std::string entityName
 		m_proxy.soap_stream_fault(m_error);
 		throw std::exception(m_error.str().c_str());
 	}
+}
+
+CustomBinding_USCOREIService1Proxy& CServiceConsumer::getProxy()
+{
+	return m_proxy;
 }
 
 int	CServiceConsumer::LinesCount(std::string uuid)

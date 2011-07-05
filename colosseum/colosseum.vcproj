@@ -223,6 +223,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EndpointModel.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\IFCEngineInteract.cpp"
 				>
 			</File>
@@ -270,6 +274,10 @@
 			</File>
 			<File
 				RelativePath=".\colosseumPropPage.h"
+				>
+			</File>
+			<File
+				RelativePath=".\EndpointModel.h"
 				>
 			</File>
 			<File
